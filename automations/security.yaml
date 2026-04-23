@@ -1,0 +1,28 @@
+- alias: "Security: Ring doorbell pressed"
+  description: Announce on Alexa when Ring doorbell is pressed.
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.front_door_doorbell
+      to: "on"
+  action:
+    - service: notify.alexa_media
+      data:
+        message: "Someone is at the front door."
+        data:
+          type: announce
+        target:
+          - media_player.living_room_echo
+
+- alias: "Security: Ring motion detected"
+  description: Send mobile notification when Ring detects motion.
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.front_door_motion
+      to: "on"
+  action:
+    - service: notify.mobile_app
+      data:
+        title: "Motion Detected"
+        message: "Motion detected at the front door."

@@ -1,0 +1,45 @@
+homeassistant:
+  name: Hiropaccio Home
+  latitude: !secret home_latitude
+  longitude: !secret home_longitude
+  elevation: !secret home_elevation
+  unit_system: metric
+  currency: JPY
+  country: JP
+  time_zone: Asia/Tokyo
+
+# Load integrations split into packages for clarity
+homeassistant:
+  packages: !include_dir_named packages/
+
+# Split automations into directory
+automation: !include_dir_merge_list automations/
+
+# Split scripts into directory
+script: !include_dir_merge_named scripts/
+
+# Split scenes into directory
+scene: !include_dir_merge_list scenes/
+
+# Enable the frontend (Lovelace)
+frontend:
+  themes: !include_dir_merge_named www/themes/
+
+# Enable configuration UI
+config:
+
+# Enable Home Assistant API
+api:
+
+# Enable HTTP
+http:
+
+# Logbook and history
+logbook:
+history:
+
+# Enable sun sensor
+sun:
+
+# Enable system health
+system_health:

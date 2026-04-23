@@ -1,0 +1,41 @@
+title: Home
+views:
+  - title: Overview
+    path: overview
+    icon: mdi:home
+    cards:
+      - type: entities
+        title: Security
+        entities:
+          - binary_sensor.front_door_doorbell
+          - binary_sensor.front_door_motion
+
+      - type: entities
+        title: Cleaning
+        entities:
+          - vacuum.eufy_living_room
+
+      - type: media-control
+        entity: media_player.living_room_echo
+
+  - title: Switches
+    path: switches
+    icon: mdi:toggle-switch
+    cards:
+      - type: entities
+        title: SwitchBot Devices
+        entities:
+          - switch.living_room_main_light
+          - switch.bedroom_lamp
+          - switch.living_room_tv_power
+
+  - title: Scenes
+    path: scenes
+    icon: mdi:palette
+    cards:
+      - type: scene
+        entity: scene.evening
+        name: Evening
+      - type: scene
+        entity: scene.away
+        name: Away

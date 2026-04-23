@@ -1,0 +1,8 @@
+# Ring integration is built into Home Assistant.
+# Configure in: Settings → Integrations → Ring
+# Credentials go in secrets.yaml (ring_username, ring_password).
+#
+# Example entity IDs after setup:
+#   binary_sensor.front_door_doorbell   (button press)
+#   binary_sensor.front_door_motion     (motion detection)
+#   camera.front_door                   (live view / snapshot)
