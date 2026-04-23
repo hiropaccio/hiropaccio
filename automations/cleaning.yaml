@@ -1,0 +1,37 @@
+- alias: "Cleaning: Start robot vacuum on schedule"
+  description: Run Eufy robot vacuum on weekday mornings when nobody is home.
+  mode: single
+  trigger:
+    - platform: time
+      at: "09:00:00"
+  condition:
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+    - condition: state
+      entity_id: group.all_persons
+      state: "not_home"
+  action:
+    - service: vacuum.start
+      target:
+        entity_id: vacuum.eufy_living_room
+
+- alias: "Cleaning: Return vacuum to dock on arrival"
+  description: Send Eufy back to dock when someone arrives home.
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: group.all_persons
+      to: "home"
+  condition:
+    - condition: state
+      entity_id: vacuum.eufy_living_room
+      state: "cleaning"
+  action:
+    - service: vacuum.return_to_base
+      target:
+        entity_id: vacuum.eufy_living_room

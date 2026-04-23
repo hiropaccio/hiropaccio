@@ -1,0 +1,7 @@
+# Eufy Security is a HACS custom integration (by fuatakgun).
+# Install via HACS, then configure in: Settings → Integrations → Eufy Security
+# Credentials go in secrets.yaml (eufy_username, eufy_password).
+#
+# Example entity IDs after setup:
+#   vacuum.eufy_living_room
+#   sensor.eufy_living_room_battery

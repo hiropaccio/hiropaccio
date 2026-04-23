@@ -1,0 +1,16 @@
+alexa_announce:
+  alias: "Alexa: Announce message"
+  description: Send a TTS announcement to all Alexa devices.
+  mode: single
+  fields:
+    message:
+      description: The text to announce.
+      example: "Dinner is ready."
+  sequence:
+    - service: notify.alexa_media
+      data:
+        message: "{{ message }}"
+        data:
+          type: announce
+        target:
+          - media_player.living_room_echo

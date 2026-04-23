@@ -1,0 +1,15 @@
+- name: Evening
+  entities:
+    switch.living_room_main_light:
+      state: "on"
+    switch.bedroom_lamp:
+      state: "on"
+
+- name: Away
+  entities:
+    switch.living_room_main_light:
+      state: "off"
+    switch.bedroom_lamp:
+      state: "off"
+    switch.living_room_tv_power:
+      state: "off"

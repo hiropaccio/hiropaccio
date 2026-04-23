@@ -1,0 +1,15 @@
+# Alexa Media Player is a HACS custom integration.
+# Install via HACS, then configure in: Settings → Integrations → Alexa Media Player
+# Credentials go in secrets.yaml (alexa_email, alexa_password).
+#
+# Example entity IDs after setup:
+#   media_player.living_room_echo
+#
+# TTS announcements use the notify.alexa_media service:
+#   service: notify.alexa_media
+#   data:
+#     message: "Hello!"
+#     data:
+#       type: announce      # or tts
+#     target:
+#       - media_player.living_room_echo

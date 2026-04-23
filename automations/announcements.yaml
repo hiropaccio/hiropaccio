@@ -1,0 +1,38 @@
+- alias: "Announcements: Good morning"
+  description: Alexa plays a good morning announcement on weekdays.
+  mode: single
+  trigger:
+    - platform: time
+      at: "07:00:00"
+  condition:
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+  action:
+    - service: notify.alexa_media
+      data:
+        message: "Good morning! Have a great day."
+        data:
+          type: announce
+        target:
+          - media_player.living_room_echo
+
+- alias: "Announcements: Vacuum done"
+  description: Notify Alexa when the Eufy vacuum finishes cleaning.
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: vacuum.eufy_living_room
+      to: "returning"
+  action:
+    - service: notify.alexa_media
+      data:
+        message: "The robot vacuum has finished cleaning and is returning to its dock."
+        data:
+          type: announce
+        target:
+          - media_player.living_room_echo
