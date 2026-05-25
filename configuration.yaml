@@ -25,13 +25,12 @@ frontend:
 # Lovelace dashboards from YAML
 lovelace:
   dashboards:
-    lovelace-home:
+    lovelace-myhome:
       mode: yaml
       filename: dashboards/main.yaml
-      title: Home
-      icon: mdi:home
+      title: My Home
+      icon: mdi:home-heart
       show_in_sidebar: true
-      require_admin: false
 
 # Enable configuration UI
 config:
