@@ -1,0 +1,149 @@
+# Solar & Battery — Choshu Sangyo / Sharp SmartPV Multi
+#
+# Hardware:
+#   CB-P63M06A  : 6.3kWh battery package
+#   PCS-RP2A    : Multi battery power conditioner (inverter)
+#   RC-307A     : LAN gateway (ECHONET Lite)
+#
+# Integration setup (UI only — no YAML needed for the integration itself):
+#   Settings → Integrations → Add Integration → "ECHONET Lite"
+#   HA will multicast-discover the RC-307A automatically.
+#   If discovery fails, enter the RC-307A's IP address manually.
+#   Run tools/discover_echonet.py on the Pi to find the IP first.
+#
+# After discovery, HA creates entities for every ECHONET Lite property
+# the RC-307A exposes.  Update the entity IDs below to match what HA assigns.
+# Typical entities from the RC-307A (Sharp SmartPV Multi):
+#
+#   Solar generation object (0x0279):
+#     sensor.<name>_measured_instantaneous_power          — W  (live PV output)
+#     sensor.<name>_measured_cumulative_power_generation  — kWh (lifetime total)
+#
+#   Storage battery object (0x027D):
+#     sensor.<name>_remaining_stored_electricity_1        — % (battery SOC)
+#     sensor.<name>_measured_instantaneous_charging_discharging_power — W
+#     sensor.<name>_operation_mode_setting                — charge/discharge/standby
+#
+# Replace "rc_307a" in entity IDs below with whatever HA assigns.
+
+# Grid export / import are exposed by the RC-307A directly (the PCS measures them).
+# Typical ECHONET Lite entity IDs from Sharp SmartPV via RC-307A:
+#   sensor.<name>_selling_power    — W  (売電電力, power going TO the grid)
+#   sensor.<name>_buying_power     — W  (買電電力, power coming FROM the grid)
+#   sensor.<name>_power_consumption — W (消費電力, total home load)
+# Update the entity IDs below after HA discovery confirms the actual names.
+
+# ---------------------------------------------------------------------------
+# Utility meters — daily / monthly totals for energy dashboard
+# ---------------------------------------------------------------------------
+utility_meter:
+  solar_generation_daily:
+    source: sensor.rc_307a_measured_cumulative_power_generation
+    cycle: daily
+    name: "Solar Generation Today"
+
+  solar_generation_monthly:
+    source: sensor.rc_307a_measured_cumulative_power_generation
+    cycle: monthly
+    name: "Solar Generation This Month"
+
+  grid_import_daily:
+    source: sensor.rc_307a_buying_power
+    cycle: daily
+    name: "Grid Import Today"
+
+  grid_export_daily:
+    source: sensor.rc_307a_selling_power
+    cycle: daily
+    name: "Grid Export Today"
+
+# ---------------------------------------------------------------------------
+# Template sensors — derived values not directly exposed by ECHONET Lite
+# ---------------------------------------------------------------------------
+template:
+  - sensor:
+      - name: "Solar Power kW"
+        unique_id: solar_power_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ (states('sensor.rc_307a_measured_instantaneous_power') | float(0) / 1000) | round(2) }}
+
+      - name: "Battery SOC"
+        unique_id: battery_soc
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        state: >
+          {{ states('sensor.rc_307a_remaining_stored_electricity_1') | float(0) | round(1) }}
+
+      - name: "Battery Power kW"
+        unique_id: battery_power_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        # Positive = charging, negative = discharging (adjust sign if HA reports opposite)
+        state: >
+          {{ (states('sensor.rc_307a_measured_instantaneous_charging_discharging_power') | float(0) / 1000) | round(2) }}
+
+      - name: "Grid Import kW"
+        unique_id: grid_import_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ (states('sensor.rc_307a_buying_power') | float(0) / 1000) | round(2) }}
+
+      - name: "Grid Export kW"
+        unique_id: grid_export_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ (states('sensor.rc_307a_selling_power') | float(0) / 1000) | round(2) }}
+
+      - name: "Home Consumption kW"
+        unique_id: home_consumption_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        # If RC-307A doesn't expose consumption directly, derive it:
+        # Consumption = Solar + Grid Import - Grid Export - Battery Charging
+        state: >
+          {% set pv = states('sensor.rc_307a_measured_instantaneous_power') | float(0) %}
+          {% set buy = states('sensor.rc_307a_buying_power') | float(0) %}
+          {% set sell = states('sensor.rc_307a_selling_power') | float(0) %}
+          {% set bat = states('sensor.rc_307a_measured_instantaneous_charging_discharging_power') | float(0) %}
+          {{ ((pv + buy - sell - [bat, 0] | max) / 1000) | round(2) }}
+
+      - name: "Self-Consumption Rate"
+        unique_id: self_consumption_rate
+        unit_of_measurement: "%"
+        state_class: measurement
+        # % of solar generation consumed at home (not exported to grid)
+        state: >
+          {% set pv = states('sensor.rc_307a_measured_instantaneous_power') | float(0) %}
+          {% set sell = states('sensor.rc_307a_selling_power') | float(0) %}
+          {% if pv > 0 %}
+            {{ (([pv - sell, 0] | max / pv) * 100) | round(1) }}
+          {% else %}
+            0
+          {% endif %}
+
+      - name: "Self-Sufficiency Rate"
+        unique_id: self_sufficiency_rate
+        unit_of_measurement: "%"
+        state_class: measurement
+        # % of home consumption covered by solar + battery (not from grid)
+        state: >
+          {% set pv = states('sensor.rc_307a_measured_instantaneous_power') | float(0) %}
+          {% set buy = states('sensor.rc_307a_buying_power') | float(0) %}
+          {% set sell = states('sensor.rc_307a_selling_power') | float(0) %}
+          {% set bat = states('sensor.rc_307a_measured_instantaneous_charging_discharging_power') | float(0) %}
+          {% set consumption = pv + buy - sell - [bat, 0] | max %}
+          {% if consumption > 0 %}
+            {{ (([consumption - buy, 0] | max / consumption) * 100) | round(1) }}
+          {% else %}
+            100
+          {% endif %}

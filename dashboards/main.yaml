@@ -29,6 +29,94 @@ views:
           - switch.bedroom_lamp
           - switch.living_room_tv_power
 
+  - title: Solar & Battery
+    path: solar
+    icon: mdi:solar-power
+    cards:
+      - type: gauge
+        entity: sensor.battery_soc
+        name: Battery SOC
+        min: 0
+        max: 100
+        severity:
+          green: 40
+          yellow: 20
+          red: 0
+
+      - type: glance
+        title: Live Power Flow
+        entities:
+          - entity: sensor.solar_power_kw
+            name: Solar
+            icon: mdi:solar-power-variant
+          - entity: sensor.home_consumption_kw
+            name: Home
+            icon: mdi:home-lightning-bolt
+          - entity: sensor.battery_power_kw
+            name: Battery
+            icon: mdi:battery-charging
+          - entity: sensor.grid_import_kw
+            name: Buying
+            icon: mdi:transmission-tower-import
+          - entity: sensor.grid_export_kw
+            name: Selling
+            icon: mdi:transmission-tower-export
+
+      - type: glance
+        title: Efficiency
+        entities:
+          - entity: sensor.self_consumption_rate
+            name: Self-Consumption
+            icon: mdi:home-percent
+          - entity: sensor.self_sufficiency_rate
+            name: Self-Sufficiency
+            icon: mdi:shield-sun
+
+      - type: history-graph
+        title: Power Flow (24h)
+        hours_to_show: 24
+        entities:
+          - entity: sensor.solar_power_kw
+            name: Solar (kW)
+          - entity: sensor.home_consumption_kw
+            name: Home (kW)
+          - entity: sensor.battery_power_kw
+            name: Battery (kW)
+          - entity: sensor.grid_import_kw
+            name: Grid Import (kW)
+          - entity: sensor.grid_export_kw
+            name: Grid Export (kW)
+
+      - type: statistic
+        entity: sensor.solar_generation_daily
+        name: Generated Today
+        period:
+          calendar:
+            period: day
+        stat_type: change
+
+      - type: statistic
+        entity: sensor.solar_generation_monthly
+        name: Generated This Month
+        period:
+          calendar:
+            period: month
+        stat_type: change
+
+      - type: entities
+        title: System Detail
+        entities:
+          - entity: sensor.rc_307a_remaining_stored_electricity_1
+            name: Battery SOC (raw)
+          - entity: sensor.rc_307a_measured_instantaneous_charging_discharging_power
+            name: Battery Power (W)
+          - entity: sensor.rc_307a_operation_mode_setting
+            name: Battery Mode
+          - entity: sensor.rc_307a_buying_power
+            name: Grid Import (W)
+          - entity: sensor.rc_307a_selling_power
+            name: Grid Export (W)
+
   - title: Scenes
     path: scenes
     icon: mdi:palette
