@@ -22,15 +22,9 @@ scene: !include_dir_merge_list scenes/
 frontend:
   themes: !include_dir_merge_named www/themes/
 
-# Lovelace dashboards from YAML
+# Lovelace in YAML mode — reads from ui-lovelace.yaml in this directory
 lovelace:
-  dashboards:
-    lovelace-myhome:
-      mode: yaml
-      filename: dashboards/main.yaml
-      title: My Home
-      icon: mdi:home-heart
-      show_in_sidebar: true
+  mode: yaml
 
 # Enable configuration UI
 config:
