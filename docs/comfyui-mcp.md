@@ -25,6 +25,10 @@ sits between Claude and a ComfyUI instance's HTTP/WebSocket API. Once registered
 
 ## The main implementations
 
+**Chosen for this project: joenorton/comfyui-mcp-server** — simple, Python-based, and
+workflow-driven, which matches the goal of exposing just a handful of specific workflows.
+See the [setup walkthrough](#setup-walkthrough-joenortoncomfyui-mcp-server) below.
+
 ### 1. Comfy Cloud MCP (official, hosted — no GPU needed)
 
 - Hosted by Comfy-Org at `https://cloud.comfy.org/mcp`; workflows execute on Comfy Cloud GPUs.
@@ -67,7 +71,7 @@ Claude Code / Claude Desktop config:
 }
 ```
 
-### 3. joenorton/comfyui-mcp-server (lightweight, workflow-driven)
+### 3. joenorton/comfyui-mcp-server (lightweight, workflow-driven — CHOSEN)
 
 <https://github.com/joenorton/comfyui-mcp-server> — small Python server.
 
@@ -76,19 +80,10 @@ Claude Code / Claude Desktop config:
   `PARAM_PROMPT`, `PARAM_INT_STEPS`, `PARAM_FLOAT_CFG`.
 - Runs as a streamable-HTTP MCP server on `http://127.0.0.1:9000/mcp`; Python 3.8+ and a local
   ComfyUI on port 8188.
-
-Project-scoped `.mcp.json` for Claude Code:
-
-```json
-{
-  "mcpServers": {
-    "comfyui-mcp-server": {
-      "type": "streamable-http",
-      "url": "http://127.0.0.1:9000/mcp"
-    }
-  }
-}
-```
+- Also ships useful built-in tools beyond custom workflows: `generate_image`, `regenerate`,
+  `view_image`, queue/job management (`get_queue_status`, `get_job`, `cancel_job`), asset
+  management (`list_assets`, `get_asset_metadata`), config (`get_defaults`, `set_defaults`,
+  `list_models`), and `list_workflows` / `run_workflow`.
 
 ### 4. Other notable options
 
@@ -125,20 +120,84 @@ CUDA 12.8 or newer** — older torch builds fail with "no kernel image available
   `python -c "import torch; print(torch.__version__)"`. Avoid old `xformers` builds for the
   same reason.
 
-## Recommended path
+## Setup walkthrough: joenorton/comfyui-mcp-server
 
 Everything runs on the one PC — ComfyUI, the MCP server, and Claude — so no LAN/remote
-configuration is needed; the MCP server auto-detects ComfyUI on `localhost:8188`.
+configuration is needed. Only Python is required (no Node.js).
 
-1. Install ComfyUI on the PC (Windows portable or desktop app, Blackwell-ready build) and
-   verify the web UI at `http://127.0.0.1:8188`. Do a manual test render first.
-2. Grab starter models: SDXL or Flux fp8 checkpoint via ComfyUI's built-in model manager.
-3. Start with **artokun/comfyui-mcp** — broadest tool coverage and an actively maintained
-   Claude Code plugin. Register it (requires Node.js ≥ 22):
-   ```bash
-   claude mcp add comfyui -- npx -y comfyui-mcp
+### 1. Install and run ComfyUI
+
+Use the Windows portable package or desktop app (Blackwell-ready build, see hardware notes
+above) and verify the web UI at `http://127.0.0.1:8188`. Do a manual test render first, and
+grab a starter checkpoint (SDXL or Flux fp8) via ComfyUI's model manager.
+
+### 2. Install and run the MCP server
+
+```bash
+git clone https://github.com/joenorton/comfyui-mcp-server.git
+cd comfyui-mcp-server
+pip install -r requirements.txt
+python server.py
+```
+
+The server listens at `http://127.0.0.1:9000/mcp`. Verify it end-to-end without Claude:
+
+```bash
+python test_client.py -p "a beautiful sunset over mountains"
+```
+
+### 3. Register with Claude
+
+Claude Code — either create `.mcp.json` in the project root:
+
+```json
+{
+  "mcpServers": {
+    "comfyui-mcp-server": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:9000/mcp"
+    }
+  }
+}
+```
+
+or register from the CLI:
+
+```bash
+claude mcp add --transport http comfyui-mcp-server http://127.0.0.1:9000/mcp
+```
+
+Claude Desktop: add the same `mcpServers` block to `claude_desktop_config.json`
+(some clients want `"type": "http"` instead of `"streamable-http"` — both work).
+Restart the client so it discovers the tools, then test with
+"generate an image of …".
+
+### 4. Add your own workflows
+
+1. Build and test the workflow in the ComfyUI web UI.
+2. Export it as **API format** JSON (enable dev mode options in ComfyUI settings, then
+   "Save (API Format)").
+3. Replace the values you want Claude to control with placeholders:
+   - `PARAM_PROMPT` → required string parameter
+   - `PARAM_INT_<NAME>` → optional integer parameter (e.g., `PARAM_INT_STEPS`)
+   - `PARAM_FLOAT_<NAME>` → optional float parameter (e.g., `PARAM_FLOAT_CFG`)
+
+   ```json
+   {
+     "3": {
+       "inputs": {
+         "text": "PARAM_PROMPT",
+         "steps": "PARAM_INT_STEPS"
+       }
+     }
+   }
    ```
-   or add the JSON block above to `claude_desktop_config.json` for Claude Desktop.
-4. Test with a simple "generate an image of …" prompt in Claude.
-5. If it feels heavyweight, fall back to **joenorton/comfyui-mcp-server** and expose only the
-   specific workflow JSONs you actually use.
+4. Save the file into the server's `workflows/` directory — the filename becomes the tool
+   name (`portrait_flux.json` → `portrait_flux` tool). Restart the server and it shows up
+   in Claude automatically.
+
+### Daily use
+
+Start ComfyUI, start `python server.py`, open Claude — then just talk:
+"run portrait_flux with prompt '…' and 30 steps", "regenerate that with cfg 5",
+"list assets".
