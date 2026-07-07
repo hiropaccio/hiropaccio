@@ -196,6 +196,48 @@ Restart the client so it discovers the tools, then test with
    name (`portrait_flux.json` → `portrait_flux` tool). Restart the server and it shows up
    in Claude automatically.
 
+### Remote access (using the MCP server from another PC)
+
+By default the server binds to `127.0.0.1` (FastMCP's default; `server.py` only overrides the
+port). To make it reachable from other machines on the LAN, set FastMCP's host via
+environment variable — no code change needed:
+
+```powershell
+# Windows PowerShell
+$env:FASTMCP_HOST="0.0.0.0"; python server.py
+```
+
+```bash
+# Linux/macOS
+FASTMCP_HOST=0.0.0.0 python server.py
+```
+
+(Equivalent one-line edit: add `host="0.0.0.0"` to the `FastMCP(...)` constructor in
+`server.py`. The port stays 9000 because it's passed explicitly.)
+
+Then:
+
+1. Allow inbound TCP 9000 through Windows Firewall on the GPU PC (admin shell):
+   ```powershell
+   netsh advfirewall firewall add rule name="ComfyUI MCP" dir=in action=allow protocol=TCP localport=9000
+   ```
+2. On the remote PC, point `.mcp.json` at the GPU PC's LAN IP:
+   ```json
+   {
+     "mcpServers": {
+       "comfyui-mcp-server": {
+         "type": "streamable-http",
+         "url": "http://192.168.x.x:9000/mcp"
+       }
+     }
+   }
+   ```
+
+> ⚠️ The server has **no authentication** — anyone who can reach port 9000 can drive the GPU
+> and read generated assets. Keep it on the trusted home LAN only; never port-forward it to
+> the internet. For outside access, use a VPN (WireGuard / Tailscale) instead. ComfyUI itself
+> can stay bound to `127.0.0.1:8188` — the MCP server talks to it locally.
+
 ### Daily use
 
 Start ComfyUI, start `python server.py`, open Claude — then just talk:
