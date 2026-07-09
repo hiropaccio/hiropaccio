@@ -1,0 +1,6 @@
+# Dependencies for aiboo_monitor.py
+# Install: pip install -r requirements.txt
+
+psutil>=5.9.0          # CPU / RAM stats
+paho-mqtt>=2.0.0       # MQTT client (2.x required: script uses CallbackAPIVersion)
+nvidia-ml-py>=12.535.0 # official NVML bindings, provides the "pynvml" module
